@@ -1,6 +1,8 @@
 # Retirement Planner for Roth Conversions and Healthcare Costs
+
+Download retirement-planner.html and open it in a browser. It will run entirely locally, with no data sent to any server. The model is based on the assumptions below, but you can change them in the input form. The model is intended for educational purposes only; it is not financial or tax advice.
  
-Last updated: September 18, 2026. All dollar amounts are in today's dollars unless noted. This is an educational model, not financial or tax advice.
+Last updated: Sept 27, 2026. All dollar amounts are in today's dollars unless noted. This is an educational model, not financial or tax advice.
  
 ## Opportunities identified while still working
  
