@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roth Conversion Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F6F3; --surface:#FFFFFF; --ink:#22303F; --muted:#5E6B78; --rule:#D8DCD6;
+  --pre:#B7862F; --roth:#3F7A5E; --txb:#7A8CA3; --warn:#A5452B; --accent:#2F5D8A;
+  --row-alt:#F0F2EE; --focus:#2F5D8A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141A20; --surface:#1C242C; --ink:#E4E8EC; --muted:#9BA7B3; --rule:#2F3A45;
+    --pre:#D4A24C; --roth:#5FA383; --txb:#93A5BC; --warn:#E07A5F; --accent:#7FA8D1;
+    --row-alt:#202A33; --focus:#7FA8D1;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141A20; --surface:#1C242C; --ink:#E4E8EC; --muted:#9BA7B3; --rule:#2F3A45;
+  --pre:#D4A24C; --roth:#5FA383; --txb:#93A5BC; --warn:#E07A5F; --accent:#7FA8D1;
+  --row-alt:#202A33; --focus:#7FA8D1;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:"Newsreader",Georgia,"Times New Roman",serif;font-weight:500;margin:0}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 20px 60px}
+header{margin-bottom:22px;max-width:900px}
+header h1{font-size:15px;font-family:"IBM Plex Sans",system-ui,sans-serif;font-weight:600;color:var(--muted);margin-bottom:10px}
+.headline{font-family:"Newsreader",Georgia,serif;font-size:clamp(24px,3.2vw,36px);line-height:1.22;font-weight:400}
+.headline b{font-weight:600}
+.headline .pre{color:var(--pre)} .headline .roth{color:var(--roth)}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+aside{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:6px 16px 16px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:900px){aside{position:static;max-height:none}}
+fieldset{border:0;border-bottom:1px solid var(--rule);margin:0;padding:12px 0 14px}
+fieldset:last-of-type{border-bottom:0}
+legend{font-family:"Newsreader",Georgia,serif;font-size:18px;padding:0;margin-bottom:6px}
+label{display:grid;grid-template-columns:1fr 118px;gap:8px;align-items:center;font-size:13.5px;color:var(--ink);margin:6px 0}
+label span small{display:block;color:var(--muted);font-size:12px;line-height:1.3}
+input,select{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:5px 7px;text-align:right}
+select{text-align:left}
+input[type=checkbox]{width:18px;height:18px;justify-self:end;accent-color:var(--roth)}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.actions{display:flex;gap:8px;margin-top:10px}
+button{font:inherit;font-size:13.5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:6px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+main{min-width:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);margin-bottom:26px}
+.fact{padding:14px 16px 14px 0}
+.fact + .fact{padding-left:16px;border-left:1px solid var(--rule)}
+@media (max-width:640px){.fact + .fact{border-left:0;padding-left:0;border-top:1px solid var(--rule)}}
+.fact .k{font-size:13px;color:var(--muted)}
+.fact .v{font-family:"Newsreader",Georgia,serif;font-size:28px;line-height:1.15;margin-top:2px}
+.fact .d{font-size:13px;margin-top:3px}
+.good{color:var(--roth)} .bad{color:var(--warn)}
+section{margin-bottom:30px}
+section h2{font-size:22px;margin-bottom:4px}
+section p.note{color:var(--muted);font-size:13.5px;margin:0 0 10px;max-width:760px}
+.chart{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:12px 12px 6px}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted);margin:2px 4px 8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.legend i.line{height:2px;width:16px;vertical-align:3px;border-radius:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.tablebar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:5px 12px;background:var(--surface)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--rule)}
+th{font-weight:600;font-size:12.5px;color:var(--muted);vertical-align:bottom;white-space:normal;min-width:74px;background:var(--surface);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);min-width:54px}
+tbody tr:nth-child(even) td{background:var(--row-alt)}
+td.conv{color:var(--roth);font-weight:600}
+td.tot{font-weight:600}
+td small{color:var(--muted);display:block;font-size:11.5px}
+tr.rmd td:first-child{box-shadow:inset 3px 0 0 var(--pre)}
+tr.single td:first-child{box-shadow:inset 3px 0 0 var(--txb)}
+.keys{font-size:12.5px;color:var(--muted);margin-top:8px}
+.keys span{margin-right:16px}
+.keys i{display:inline-block;width:3px;height:12px;margin-right:6px;vertical-align:-2px}
+.derived{margin:2px 0 8px;font-size:12.5px;color:var(--muted);text-align:right}
+.warn{color:var(--warn);font-size:13.5px;margin:6px 0 0}
+.assume{font-size:13.5px;color:var(--muted);max-width:820px}
+.assume li{margin:4px 0}
+footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--rule);padding-top:14px;max-width:820px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Roth conversion planner</h1>
+    <p class="headline" id="headline">Calculating…</p>
+  </header>
+
+  <div class="layout">
+    <aside aria-label="Plan inputs">
+      <form id="inputs" onsubmit="return false">
+        <fieldset>
+          <legend>Today</legend>
+          <label><span>Your age</span><input type="number" id="age" min="40" max="75" step="1"></label>
+          <label><span>Spouse's age</span><input type="number" id="spouseAge" min="40" max="80" step="1"></label>
+          <label><span>Pre-tax 401(k)/IRA</span><input type="number" id="pre" step="10000"></label>
+          <label><span>Roth 401(k)/IRA</span><input type="number" id="roth" step="10000"></label>
+          <label><span>Pre-tax added per year<small>Your deferral + employer match</small></span><input type="number" id="contribPre" step="500"></label>
+          <label><span>Roth added per year<small>Catch-up, mega backdoor, etc.</small></span><input type="number" id="contribRoth" step="500"></label>
+          <label><span>HSA balance today</span><input type="number" id="hsa" step="1000"></label>
+          <label><span>HSA added per year<small>Until retirement</small></span><input type="number" id="contribHsa" step="500"></label>
+          <label><span>Income while working<small>For Medicare surcharge lookback</small></span><input type="number" id="workMagi" step="5000"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Retirement</legend>
+          <label><span>Retire at age</span><input type="number" id="retireAge" min="50" max="75" step="1"></label>
+          <label><span>Taxable brokerage today</span><input type="number" id="taxable" step="10000"></label>
+          <label><span>Added to brokerage per year<small>For each year before retirement</small></span><input type="number" id="contribTaxable" step="5000"></label>
+          <p class="derived" id="txbAtRet"></p>
+          <label><span>Cost basis<small>% of brokerage at retirement that isn't gain</small></span><input type="number" id="basisPct" min="0" max="100" step="5"></label>
+          <label><span>Mortgage paid off at retirement<small>Actual balance then; converted to today's dollars</small></span><input type="number" id="mortgage" step="5000"></label>
+          <label><span>Living expenses per year<small>Today's dollars, not including healthcare; keeps pace with inflation</small></span><input type="number" id="spend" step="5000"></label>
+          <label><span>Charitable giving per year</span><input type="number" id="giving" step="1000"></label>
+          <label><span>Give via QCDs from 71</span><input type="checkbox" id="useQcd"></label>
+          <label><span>Max brokerage sold per year<small>Before RMDs start</small></span><input type="number" id="drawCap" step="10000"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Healthcare</legend>
+          <label><span>Coverage before 65<small>ACA premiums + out-of-pocket, today's cost per person per year</small></span><input type="number" id="aca" step="500"></label>
+          <label><span>Medicare Part B<small>Today's cost, per person per month</small></span><input type="number" id="partB" step="5"></label>
+          <label><span>Medicare Part D<small>Today's cost, per person per month</small></span><input type="number" id="partD" step="5"></label>
+          <label><span>Medigap Plan G<small>Today's cost, per person per month</small></span><input type="number" id="partG" step="5"></label>
+          <label><span>Dental insurance<small>Today's cost, per person per month</small></span><input type="number" id="dental" step="5"></label>
+          <label><span>Healthcare cost rise (%)<small>Per year, applied from today</small></span><input type="number" id="hcRise" step="0.5"></label>
+          <label><span>General inflation (%)<small>Healthcare rises this much faster in today's dollars</small></span><input type="number" id="inflation" step="0.5"></label>
+          <label><span>Start using HSA at your age<small>For Medicare Part B and D</small></span><input type="number" id="hsaStartAge" min="55" max="95" step="1"></label>
+          <label><span>HSA also pays Medicare surcharges<small>They're part of B and D premiums</small></span><input type="checkbox" id="hsaSurcharge"></label>
+          <label><span>HSA also pays dental insurance<small>Not an HSA-qualified expense</small></span><input type="checkbox" id="hsaDental"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Social Security</legend>
+          <label><span>Your benefit at 67<small>From ssa.gov, today's dollars</small></span><input type="number" id="pia" step="500"></label>
+          <label><span>You claim at</span><input type="number" id="yourClaim" min="62" max="70" step="1"></label>
+          <label><span>Spouse's own benefit at 67</span><input type="number" id="spousePia" step="500"></label>
+          <label><span>Spouse claims at</span><input type="number" id="spouseClaim" min="62" max="70" step="1"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Conversion strategy</legend>
+          <label><span>Before Medicare<small>Retirement to 64: fill up to</small></span>
+            <select id="targetA"></select></label>
+          <label><span>From 65 until RMDs<small>Fill up to</small></span>
+            <select id="targetB"></select></label>
+          <label><span>Custom taxable income</span><input type="number" id="custom" step="5000"></label>
+          <label><span>RMDs start at</span><input type="number" id="rmdAge" min="72" max="75" step="1"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Assumptions</legend>
+          <label><span>Return after inflation (%)</span><input type="number" id="ret" step="0.5"></label>
+          <label><span>First death at your age<small>You die first; spouse files single after</small></span><input type="number" id="deathAge" min="60" max="110" step="1"></label>
+          <label><span>Plan ends at your age</span><input type="number" id="endAge" min="70" max="110" step="1"></label>
+          <label><span>Survivor spending (%)</span><input type="number" id="survivorPct" min="40" max="100" step="5"></label>
+          <label><span>Future tax increase<small>Percentage points added to every bracket</small></span><input type="number" id="taxUp" min="0" max="20" step="1"></label>
+          <label><span>Starting at your age</span><input type="number" id="taxUpAge" min="55" max="100" step="1"></label>
+          <label><span>Heirs' tax rate on pre-tax (%)<small>Today's law; any future increase is added</small></span><input type="number" id="heirRate" min="0" max="50" step="1"></label>
+        </fieldset>
+        <div class="actions">
+          <button type="button" id="reset">Reset to defaults</button>
+        </div>
+      </form>
+    </aside>
+
+    <main>
+      <div class="facts" id="facts"></div>
+
+      <div class="grid2">
+        <section>
+          <h2>Where your money sits</h2>
+          <p class="note">End-of-year balances, in today's dollars.</p>
+          <div class="chart">
+            <div class="legend"><span><i style="background:var(--pre)"></i>Pre-tax</span><span><i style="background:var(--roth)"></i>Roth</span><span><i style="background:var(--txb)"></i>Taxable</span></div>
+            <div id="balChart"></div>
+          </div>
+        </section>
+        <section>
+          <h2>Tax you pay each year</h2>
+          <p class="note">Federal income tax plus Medicare surcharges, in today's dollars.</p>
+          <div class="chart">
+            <div class="legend"><span><i style="background:var(--accent)"></i>This plan</span><span><i class="line" style="background:var(--warn)"></i>No conversions</span></div>
+            <div id="taxChart"></div>
+          </div>
+        </section>
+      </div>
+
+      <section>
+        <div class="tablebar">
+          <div>
+            <h2>Year by year</h2>
+          </div>
+          <div class="seg" role="group" aria-label="Table range">
+            <button type="button" id="rangeRmd" aria-pressed="true">Through RMD start</button>
+            <button type="button" id="rangeAll" aria-pressed="false">Through end of plan</button>
+          </div>
+        </div>
+        <div class="tablewrap"><table id="table"></table></div>
+        <div class="keys"><span><i style="background:var(--pre)"></i>RMD years</span><span><i style="background:var(--txb)"></i>Surviving spouse files single</span></div>
+        <div id="warnings"></div>
+      </section>
+
+      <section>
+        <h2>Healthcare by year</h2>
+        <p class="note">Costs for both of you, per year, in today's dollars. Before 65 each person pays for ACA coverage; from 65, Parts B and D and Plan G. The HSA pays Medicare Part B and D premiums (and surcharges, if selected) from the age you choose.</p>
+        <div class="tablewrap"><table id="htable"></table></div>
+      </section>
+
+      <section>
+        <h2>How this is calculated</h2>
+        <ul class="assume">
+          <li>Everything is in today's dollars, so living expenses, Social Security, contributions, tax brackets, the standard deduction and Medicare surcharge thresholds all keep pace with inflation automatically.</li>
+          <li>Some amounts are fixed in law and don't rise with inflation: the $250,000 net investment income tax threshold and the Social Security taxation thresholds. These shrink each year in today's dollars at the general inflation rate. Brokerage cost basis also shrinks, since inflation creates taxable gains.</li>
+          <li>Each year's expenses are living costs plus healthcare plus Medicare surcharges. Eligible Medicare costs come from the HSA (from the chosen age); the rest comes from the brokerage account (up to the yearly limit), then Social Security, then pre-tax withdrawals. Taxes are paid from the pre-tax withdrawal.</li>
+          <li>Healthcare: coverage before 65 is per person per year. From 65, each person pays Parts B and D and Plan G. Dental applies to each person every year. Costs grow at the healthcare rate minus general inflation, starting today, and Medicare surcharges grow at the same rate. Part A is assumed premium-free.</li>
+          <li>The HSA is invested at the same return, grows tax-free, and is taxed to heirs like pre-tax money.</li>
+          <li>Conversions raise ordinary taxable income to the chosen target. Capital gains from brokerage sales are taxed on top at 0/15/20%, plus the 3.8% net investment income tax.</li>
+          <li>Social Security taxation uses the actual provisional-income formula. Spousal benefits start once both the spouse has reached her claiming age and you have filed.</li>
+          <li>Medicare surcharges (IRMAA) use income from two years earlier. Required minimum distributions use the IRS Uniform Lifetime Table.</li>
+          <li>Extra RMD money you don't spend is reinvested in the brokerage account. Heirs' value counts Roth and brokerage in full and pre-tax money after the heirs' tax rate.</li>
+          <li>Future tax increase adds the chosen percentage points to every ordinary income bracket from the chosen age, and to the heirs' rate. Capital gains rates are left unchanged.</li>
+          <li>Not modeled: state income tax, ACA premium subsidies before 65, itemized deductions, market ups and downs, and future tax law changes.</li>
+        </ul>
+      </section>
+
+      <footer>This is an educational model, not financial or tax advice. Confirm conversion amounts each year with a CPA or planner before acting.</footer>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const DEFAULTS={age:55,spouseAge:55,pre:1500000,roth:100000,contribPre:15000,contribRoth:1000,hsa:50000,contribHsa:8000,workMagi:150000,
+  aca:15000,partB:185,partD:15,partG:300,dental:40,hcRise:5,inflation:3,hsaStartAge:65,hsaSurcharge:true,hsaDental:false,
+  retireAge:62,taxable:50000,contribTaxable:2000,basisPct:50,mortgage:100000,spend:80000,giving:0,useQcd:true,drawCap:100000,
+  pia:30000,yourClaim:67,spousePia:0,spouseClaim:67,targetA:"22",targetB:"12",custom:300000,rmdAge:75,
+  ret:3,deathAge:90,endAge:95,survivorPct:75,heirRate:30,taxUp:0,taxUpAge:68};
+const STORE="roth-planner-inputs-v6";
+
+const MFJ=[[24800,.10],[100800,.12],[211400,.22],[403550,.24],[512450,.32],[768700,.35],[Infinity,.37]];
+const SGL=[[12400,.10],[50400,.12],[105700,.22],[201775,.24],[256225,.32],[640600,.35],[Infinity,.37]];
+const LTCG={mfj:[98900,613700],sgl:[49450,545500]};
+const NIIT={mfj:250000,sgl:200000};
+const IRMAA_T={mfj:[218000,274000,342000,410000,750000],sgl:[109000,137000,171000,205000,500000]};
+const IRMAA_M=[0,95.7,240.4,385,529.6,578];
+const UNIF={72:27.4,73:26.5,74:25.5,75:24.6,76:23.7,77:22.9,78:22.0,79:21.1,80:20.2,81:19.4,82:18.5,83:17.7,84:16.8,85:16.0,86:15.2,87:14.4,88:13.7,89:12.9,90:12.2,91:11.5,92:10.8,93:10.1,94:9.5,95:8.9,96:8.4,97:7.8,98:7.3,99:6.8,100:6.4,101:6.0,102:5.6,103:5.2,104:4.9,105:4.6,106:4.3,107:4.1,108:3.9,109:3.7,110:3.5};
+const OWN_F={62:.70,63:.75,64:.80,65:.8667,66:.9333,67:1,68:1.08,69:1.16,70:1.24};
+const SPOUSAL_F={62:.65,63:.70,64:.75,65:.8333,66:.9167,67:1};
+const TARGETS=[["none","No conversions"],["12","Top of 12%"],["22","Top of 22%"],["24","Top of 24%"],["32","Top of 32%"],["custom","Custom amount"]];
+
+function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
+function bracketTax(ti,br,add){add=add||0;let t=0,prev=0;for(const [top,r] of br){if(ti>prev)t+=(Math.min(ti,top)-prev)*(r+add);prev=top;}return t;}
+function bracketRate(ti,br,add){add=add||0;for(const [top,r] of br){if(ti<=top+0.5)return r+add;}return .37+add;}
+function bracketTop(key,mfj){const br=mfj?MFJ:SGL;const idx={"12":1,"22":2,"24":3,"32":4}[key];return br[idx][0];}
+function ssTaxable(ss,other,mfj,d){
+  if(ss<=0)return 0;
+  d=d||1;
+  const b1=(mfj?32000:25000)*d,b2=(mfj?44000:34000)*d,cap=(mfj?6000:4500)*d;
+  const pi=other+0.5*ss;
+  if(pi<=b1)return 0;
+  if(pi<=b2)return Math.min(0.5*(pi-b1),0.5*ss);
+  return Math.min(0.85*ss,0.85*(pi-b2)+Math.min(0.5*ss,cap));
+}
+function ltcgTax(ordTI,gTI,mfj){
+  if(gTI<=0)return 0;
+  const [z,f]=mfj?LTCG.mfj:LTCG.sgl;
+  let rem=gTI,base=ordTI,t=0;
+  const in0=Math.max(0,Math.min(rem,z-base));rem-=in0;base+=in0;
+  const in15=Math.max(0,Math.min(rem,f-base));t+=in15*.15;rem-=in15;
+  t+=rem*.20;return t;
+}
+function irmaaCost(magi,mfj,people){
+  if(people<=0||magi==null)return 0;
+  const th=mfj?IRMAA_T.mfj:IRMAA_T.sgl;let k=0;for(const x of th)if(magi>x)k++;
+  return IRMAA_M[k]*12*people;
+}
+
+function simulate(p,noConv){
+  const r=p.ret/100,drag=0.006;
+  const offset=p.spouseAge-p.age;
+  const hcReal=(1+p.hcRise/100)/(1+p.inflation/100)-1;
+  const hcF=age=>Math.pow(1+hcReal,age-p.age);
+  let pre=p.pre,roth=p.roth,hsa=p.hsa;
+  for(let a=p.age;a<p.retireAge;a++){pre=pre*(1+r)+p.contribPre;roth=roth*(1+r)+p.contribRoth;hsa=hsa*(1+r)+p.contribHsa;}
+  const txbRet=p.taxable+p.contribTaxable*Math.max(0,p.retireAge-p.age);
+  let txb=txbRet,basis=txbRet*clamp(p.basisPct,0,100)/100;
+  const mortgage=p.mortgage*Math.pow(1+p.inflation/100,-(p.retireAge-p.age));
+  const start={pre,roth,txb,hsa,mortgage,total:pre+roth+txb+hsa,net:pre+roth+txb+hsa-mortgage};
+  const magi={};for(let a=p.age-2;a<p.retireAge;a++)magi[a]=p.workMagi;
+  const yourClaim=clamp(Math.round(p.yourClaim),62,70),spClaim=clamp(Math.round(p.spouseClaim),62,70);
+  const yourBen=p.pia*OWN_F[yourClaim];
+  const spousalStart=clamp(Math.max(spClaim,yourClaim+offset),62,70);
+  const spousalAmt=0.5*p.pia*SPOUSAL_F[Math.min(spousalStart,67)];
+  const spOwnAmt=p.spousePia*OWN_F[spClaim];
+  let survivorBen;
+  if(yourClaim<=p.deathAge)survivorBen=Math.max(yourBen,0.825*p.pia);
+  else survivorBen=p.pia*OWN_F[clamp(Math.max(p.deathAge,67),62,70)];
+  const rows=[];let lifeFed=0,lifeIrmaa=0,lifeHealth=0,totalConv=0,shortYears=[];
+  for(let age=p.retireAge;age<=p.endAge;age++){
+    const mfj=age<=p.deathAge,spAge=age+offset,br=mfj?MFJ:SGL;
+    const f=hcF(age);
+    const add=age>=p.taxUpAge?p.taxUp/100:0;
+    const dfl=Math.pow(1+p.inflation/100,-(age-p.age)); // fixed-dollar thresholds shrink in today's dollars
+    // Social Security
+    let ss=0;
+    const spOwn=spAge>=spClaim?spOwnAmt:0;
+    if(mfj){
+      const yours=age>=yourClaim?yourBen:0;
+      const spousal=(spAge>=spClaim&&age>=yourClaim&&spAge>=spousalStart)?spousalAmt:0;
+      ss=yours+Math.max(spOwn,spousal);
+    }else{ss=Math.max(spOwnAmt,survivorBen);}
+    const ded=mfj?32200+(age>=65?1650:0)+(spAge>=65?1650:0):16100+(spAge>=65?2050:0);
+    // healthcare for each living person
+    const people=[];if(mfj)people.push(age);people.push(spAge);
+    let hsaEligible=0,onMedicare=0;
+    const hc={aca:0,b:0,d:0,g:0,dental:0};
+    for(const pa of people){
+      if(pa<65){hc.aca+=p.aca*f;}
+      else{onMedicare++;hc.b+=p.partB*12*f;hc.d+=p.partD*12*f;hc.g+=p.partG*12*f;hsaEligible+=(p.partB+p.partD)*12*f;}
+      hc.dental+=p.dental*12*f;if(p.hsaDental)hsaEligible+=p.dental*12*f;
+    }
+    const health=hc.aca+hc.b+hc.d+hc.g+hc.dental;
+    // Medicare surcharge from income two years earlier (grows with healthcare costs)
+    const lookMfj=(age-2)<=p.deathAge;
+    const irmaa=irmaaCost(magi[age-2],lookMfj,onMedicare)*f;
+    // HSA
+    let hsaUse=0;
+    if(age>=p.hsaStartAge&&hsa>0){hsaUse=Math.min(hsa,hsaEligible+(p.hsaSurcharge?irmaa:0));hsa-=hsaUse;}
+    const living=p.spend*(mfj?1:p.survivorPct/100);
+    const qcd=(p.useQcd&&age>=71)?Math.min(p.giving,pre):0;
+    let cashNeed=living+(p.giving-qcd)+health+irmaa-hsaUse;
+    let mSale=0,draw=0;
+    const txb0=txb;
+    if(age===p.retireAge&&mortgage>0){mSale=Math.min(mortgage,txb);cashNeed+=mortgage-mSale;}
+    const beforeRmd=age<p.rmdAge;
+    if(beforeRmd)draw=Math.max(0,Math.min(txb-mSale,p.drawCap,cashNeed-ss));
+    const gainFrac=txb0>0?Math.max(0,1-basis/txb0):0;
+    const sold=mSale+draw,gains=sold*gainFrac;
+    if(txb0>0)basis*=Math.max(0,1-sold/txb0);
+    txb-=sold;
+    const rmd=age>=p.rmdAge?pre/(UNIF[Math.min(age,110)]||3.5):0;
+    function calc(D){
+      const td=Math.max(0,D-qcd);
+      const tss=ssTaxable(ss,td+gains,mfj,dfl);
+      const ordinary=td+tss,agi=ordinary+gains;
+      const ordTI=Math.max(0,ordinary-ded);
+      const gTI=Math.max(0,gains-Math.max(0,ded-ordinary));
+      const niit=0.038*Math.min(gains,Math.max(0,agi-(mfj?NIIT.mfj:NIIT.sgl)*dfl));
+      const tax=bracketTax(ordTI,br,add)+ltcgTax(ordTI,gTI,mfj)+niit;
+      const gap=cashNeed+tax-(D-qcd)-ss-draw;
+      return {ordTI,gTI,tax,agi,gap};
+    }
+    const Dmin=Math.min(pre,Math.max(rmd,qcd));
+    let D;
+    if(calc(pre).gap>0){D=pre;}
+    else if(calc(Dmin).gap<=0){D=Dmin;}
+    else{let lo=Dmin,hi=pre;for(let i=0;i<60;i++){const m=(lo+hi)/2;if(calc(m).gap<=0)hi=m;else lo=m;}D=hi;}
+    let target=null;
+    if(!noConv&&beforeRmd){
+      const key=age<65?p.targetA:p.targetB;
+      if(key==="custom")target=p.custom;
+      else if(key!=="none")target=bracketTop(key,mfj);
+    }
+    if(target!=null&&calc(D).ordTI<target&&D<pre){
+      let lo=D,hi=pre;
+      if(calc(pre).ordTI<=target){D=pre;}
+      else{for(let i=0;i<60;i++){const m=(lo+hi)/2;if(calc(m).ordTI<target)lo=m;else hi=m;}D=lo;}
+    }
+    const c=calc(D);
+    let surplus=-c.gap,conv=0,shortfall=0;
+    if(surplus<0){
+      shortfall=-surplus;surplus=0;
+      const fromTxb=Math.min(txb,shortfall);txb-=fromTxb;basis=Math.max(0,basis-fromTxb);shortfall-=fromTxb;
+      const fromRoth=Math.min(roth,shortfall);roth-=fromRoth;shortfall-=fromRoth;
+      if(shortfall>1)shortYears.push(age);
+    }
+    if(target!=null)conv=Math.max(0,Math.min(surplus,D-qcd));
+    const leftover=surplus-conv;
+    txb+=leftover;basis+=leftover;
+    pre-=D;roth+=conv;totalConv+=conv;
+    magi[age]=c.agi;
+    lifeFed+=c.tax;lifeIrmaa+=irmaa;lifeHealth+=health;
+    const expenses=living+health+(p.giving);
+    const preLiving=Math.max(0,cashNeed-ss-draw);
+    rows.push({age,spAge,mfj,ss,draw,mSale,qcd,hsaUse,preLiving,conv,D,rmd,ordTI:c.ordTI,gTI:c.gTI,rate:bracketRate(c.ordTI,br,add),
+      fed:c.tax,irmaa,tax:c.tax+irmaa,living,health,hc,expenses,pre,roth,txb,hsa,total:pre+roth+txb+hsa,isRmd:age>=p.rmdAge});
+    pre*=1+r;roth*=1+r;txb*=1+r-drag;hsa*=1+r;basis/=1+p.inflation/100;
+    Object.assign(rows[rows.length-1],{preG:pre,rothG:roth,txbG:txb,hsaG:hsa});
+  }
+  const last=rows[rows.length-1];
+  const heirRate=(p.heirRate+(p.endAge>=p.taxUpAge?p.taxUp:0))/100;
+  const heirTax=last?(last.preG+last.hsaG)*heirRate:0;
+  const heirs=last?last.rothG+last.txbG+(last.preG+last.hsaG)-heirTax:0;
+  return {start,rows,heirTax,familyTax:lifeFed+lifeIrmaa+heirTax,lifeTax:lifeFed+lifeIrmaa,lifeFed,lifeIrmaa,lifeHealth,totalConv,heirs,endPre:last?last.preG:0,endRoth:last?last.rothG:0,shortYears};
+}
+
+// ---------- formatting ----------
+function fmtK(v){if(Math.abs(v)<500)return "—";return "$"+Math.round(v/1000).toLocaleString()+"k";}
+function fmtM(v){return "$"+(v/1e6).toFixed(2)+"M";}
+function fmtBig(v){return Math.abs(v)>=1e6?fmtM(v):"$"+Math.round(v/1000).toLocaleString()+"k";}
+function pct(r){return Math.round(r*100)+"%";}
+
+// ---------- charts ----------
+const NS="http://www.w3.org/2000/svg";
+function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;const n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return n*e;}
+function axisLabel(v,isM){return isM?"$"+(v/1e6).toFixed(v%1e6===0?0:1)+"M":"$"+Math.round(v/1000)+"k";}
+function drawBalances(rows){
+  const W=640,H=280,L=54,R=10,T=10,B=28;
+  const n=rows.length;if(!n)return "";
+  const max=niceMax(Math.max(...rows.map(r=>r.total)));
+  const x=i=>L+(n===1?0:i*(W-L-R)/(n-1)),y=v=>T+(H-T-B)*(1-v/max);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Stacked balances by age">`;
+  for(let k=0;k<=4;k++){const v=max*k/4;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${axisLabel(v,true)}</text>`;}
+  const layers=[["pre","var(--pre)"],["roth","var(--roth)"],["txb","var(--txb)"]];
+  const base=rows.map(()=>0);
+  for(const [key,col] of layers){
+    const top=rows.map((r,i)=>base[i]+Math.max(0,r[key]));
+    let d="M"+rows.map((r,i)=>`${x(i)},${y(top[i])}`).join(" L");
+    for(let i=n-1;i>=0;i--)d+=` L${x(i)},${y(base[i])}`;
+    s+=`<path d="${d} Z" fill="${col}" opacity="0.88"/>`;
+    top.forEach((v,i)=>base[i]=v);
+  }
+  const step=n>20?5:n>10?2:1;
+  rows.forEach((r,i)=>{if((r.age%step)===0||i===0)s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${r.age}</text>`;});
+  return s+"</svg>";
+}
+function drawTax(rows,base){
+  const W=640,H=280,L=54,R=10,T=10,B=28;
+  const n=rows.length;if(!n)return "";
+  const max=niceMax(Math.max(...rows.map(r=>r.tax),...base.map(r=>r.tax)));
+  const bw=(W-L-R)/n,y=v=>T+(H-T-B)*(1-v/max);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Annual tax by age, plan versus no conversions">`;
+  for(let k=0;k<=4;k++){const v=max*k/4;s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${axisLabel(v,false)}</text>`;}
+  rows.forEach((r,i)=>{const h=y(0)-y(r.tax);s+=`<rect x="${L+i*bw+bw*0.15}" y="${y(r.tax)}" width="${bw*0.7}" height="${Math.max(0,h)}" fill="var(--accent)" opacity="0.85"><title>Age ${r.age}: ${fmtK(r.tax)}</title></rect>`;});
+  const pts=base.map((r,i)=>`${L+i*bw+bw/2},${y(r.tax)}`).join(" ");
+  s+=`<polyline points="${pts}" fill="none" stroke="var(--warn)" stroke-width="2"/>`;
+  const step=n>20?5:n>10?2:1;
+  rows.forEach((r,i)=>{if((r.age%step)===0||i===0)s+=`<text x="${L+i*bw+bw/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${r.age}</text>`;});
+  return s+"</svg>";
+}
+
+// ---------- UI ----------
+const ids=Object.keys(DEFAULTS);
+const el=id=>document.getElementById(id);
+for(const sel of ["targetA","targetB"]){el(sel).innerHTML=TARGETS.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");}
+function load(){let saved={};try{saved=JSON.parse(localStorage.getItem(STORE)||"{}")||{};}catch(e){saved={};}return Object.assign({},DEFAULTS,saved);}
+function save(p){try{localStorage.setItem(STORE,JSON.stringify(p));}catch(e){}}
+function fill(p){for(const k of ids){const e=el(k);if(!e)continue;if(e.type==="checkbox")e.checked=!!p[k];else e.value=p[k];}}
+function read(){const p={};for(const k of ids){const e=el(k);if(e.type==="checkbox")p[k]=e.checked;else if(e.tagName==="SELECT")p[k]=e.value;else{const v=parseFloat(e.value);p[k]=isNaN(v)?DEFAULTS[k]:v;}}
+  p.retireAge=Math.max(p.retireAge,p.age);p.endAge=Math.max(p.endAge,p.retireAge);return p;}
+let range="rmd";
+
+function render(){
+  const p=read();save(p);
+  const plan=simulate(p,false),base=simulate(p,true);
+  const taxSaved=base.lifeTax-plan.lifeTax,heirGain=plan.heirs-base.heirs,famSaved=base.familyTax-plan.familyTax;
+  const st=plan.start;
+  el("headline").innerHTML=`You retire at ${p.retireAge} with <b>${fmtM(st.net)}</b> after paying off the mortgage. Converting <b class="roth">${fmtM(plan.totalConv)}</b> to Roth leaves your heirs ${heirGain>=0?"<b>"+fmtBig(heirGain)+"</b> more":"<b>"+fmtBig(-heirGain)+"</b> less"} after all taxes than not converting, while you pay ${taxSaved>=0?"<b>"+fmtBig(taxSaved)+"</b> less":"<b>"+fmtBig(-taxSaved)+"</b> more"} in tax during your lifetimes.`;
+  el("facts").innerHTML=[
+    ["At retirement (age "+p.retireAge+")",fmtM(st.total),`Pre-tax ${fmtM(st.pre)}, Roth ${fmtM(st.roth)}, brokerage ${fmtM(st.txb)}, HSA ${fmtBig(st.hsa)}; ${fmtBig(st.mortgage)} mortgage (today's dollars) leaves ${fmtM(st.net)}`,""],
+    ["Converted to Roth",fmtM(plan.totalConv),`Roth at ${p.endAge}: ${fmtM(plan.endRoth)}. Pre-tax left: ${fmtM(plan.endPre)}`,""],
+    ["Your lifetime federal tax + surcharges",fmtM(plan.lifeTax),`${fmtBig(Math.abs(taxSaved))} ${taxSaved>=0?"less":"more"} than no conversions. Doesn't include heirs' tax`,taxSaved>=0?"good":"bad"],
+    ["After-tax value to heirs at "+p.endAge,fmtM(plan.heirs),`${heirGain>=0?"+":"−"}${fmtBig(Math.abs(heirGain))} vs. no conversions. After heirs pay ${fmtBig(plan.heirTax)} tax (vs. ${fmtBig(base.heirTax)})`,heirGain>=0?"good":"bad"]
+  ].map(([k,v,d,c])=>`<div class="fact"><div class="k">${k}</div><div class="v">${v}</div><div class="d ${c}">${d}</div></div>`).join("");
+  el("txbAtRet").textContent=`Brokerage at retirement (age ${p.retireAge}): ${fmtBig(st.txb)}`;
+  el("balChart").innerHTML=drawBalances(plan.rows);
+  el("taxChart").innerHTML=drawTax(plan.rows,base.rows);
+  const rows=range==="rmd"?plan.rows.filter(r=>r.age<=p.rmdAge):plan.rows;
+  const showQcd=rows.some(r=>r.qcd>500);
+  const cols=[
+    ["Age",r=>`${r.age}`],
+    ["From brokerage",r=>r.mSale>0?`${fmtK(r.draw)}<small>+ ${fmtK(r.mSale)} mortgage</small>`:fmtK(r.draw)],
+    ["Social Security",r=>fmtK(r.ss)],
+    ...(showQcd?[["QCD",r=>fmtK(r.qcd)]]:[]),
+    ["From pre-tax for expenses",r=>fmtK(r.preLiving)],
+    ["Converted to Roth",r=>fmtK(r.conv),"conv"],
+    ["Total pre-tax withdrawn",r=>r.isRmd?`${fmtK(r.D)}<small>RMD ${fmtK(r.rmd)}</small>`:fmtK(r.D)],
+    ["Taxable income",r=>r.gTI>500?`${fmtK(r.ordTI+r.gTI)}<small>incl. ${fmtK(r.gTI)} gains</small>`:fmtK(r.ordTI)],
+    ["Fed bracket",r=>pct(r.rate)],
+    ["Living expenses",r=>fmtK(r.living)],
+    ["Medical costs",r=>fmtK(r.health)],
+    ["Total expenses",r=>fmtK(r.expenses)],
+    ["Fed tax",r=>fmtK(r.fed)],
+    ["Medicare surcharge",r=>fmtK(r.irmaa)],
+    ["Pre-tax, end of year",r=>fmtM(r.pre)],
+    ["Roth, end of year",r=>fmtM(r.roth)],
+    ["Brokerage, end of year",r=>fmtBig(r.txb)],
+    ["HSA, end of year",r=>fmtK(r.hsa)],
+    ["Total, end of year",r=>fmtM(r.total),"tot"]
+  ];
+  const head="<thead><tr>"+cols.map(c=>`<th scope="col">${c[0]}</th>`).join("")+"</tr></thead>";
+  const body=rows.map(r=>{
+    const cls=[r.isRmd?"rmd":"",!r.mfj?"single":""].join(" ").trim();
+    return `<tr class="${cls}">`+cols.map(c=>`<td${c[2]?` class="${c[2]}"`:""}>${c[1](r)}</td>`).join("")+"</tr>";
+  }).join("");
+  el("table").innerHTML=head+"<tbody>"+body+"</tbody>";
+  const hcols=[
+    ["Age",r=>`${r.age}`],
+    ["ACA coverage (before 65)",r=>fmtK(r.hc.aca)],
+    ["Part B",r=>fmtK(r.hc.b)],
+    ["Part D",r=>fmtK(r.hc.d)],
+    ["Plan G",r=>fmtK(r.hc.g)],
+    ["Dental",r=>fmtK(r.hc.dental)],
+    ["Medical costs",r=>fmtK(r.health),"tot"],
+    ["Medicare surcharge",r=>fmtK(r.irmaa)],
+    ["Paid from HSA",r=>fmtK(r.hsaUse),"conv"],
+    ["Paid from other money",r=>fmtK(r.health+r.irmaa-r.hsaUse)],
+    ["HSA, end of year",r=>fmtK(r.hsa)]
+  ];
+  el("htable").innerHTML="<thead><tr>"+hcols.map(c=>`<th scope="col">${c[0]}</th>`).join("")+"</tr></thead><tbody>"+
+    rows.map(r=>`<tr class="${[r.isRmd?"rmd":"",!r.mfj?"single":""].join(" ").trim()}">`+hcols.map(c=>`<td${c[2]?` class="${c[2]}"`:""}>${c[1](r)}</td>`).join("")+"</tr>").join("")+"</tbody>";
+  el("warnings").innerHTML=plan.shortYears.length?`<p class="warn">Money runs out at age ${plan.shortYears[0]}. Lower spending or change the strategy.</p>`:"";
+}
+
+document.getElementById("inputs").addEventListener("input",render);
+el("reset").addEventListener("click",()=>{fill(DEFAULTS);render();});
+el("rangeRmd").addEventListener("click",()=>{range="rmd";el("rangeRmd").setAttribute("aria-pressed","true");el("rangeAll").setAttribute("aria-pressed","false");render();});
+el("rangeAll").addEventListener("click",()=>{range="all";el("rangeAll").setAttribute("aria-pressed","true");el("rangeRmd").setAttribute("aria-pressed","false");render();});
+fill(load());render();
+window.__simulate=simulate;window.__DEFAULTS=DEFAULTS;
+})();
+</script>
+</body>
+</html>
